@@ -1,4 +1,5 @@
 Description: Template para la aplicación web Tiango.
+
 Parameters:
   EnvironmentName:
     Description: Un nombre del entorno para poner como prefijo a los recursos.
@@ -28,6 +29,21 @@ Parameters:
     Description: Por favor ingresa el rango de la IP (CIDR notation) para la subnet privada en la segunda zona de disponibilidad.
     Type: String
     Default: 10.0.3.0/24
+
+  HostingBucketName:
+    Description: Nombre de la bucket para hostear un sitio web estático.
+    Type: String
+    Default: hostingBucket
+
+  HostingIndexDocument:
+    Description: Ruta de inicio para un sitio web estático.
+    Type: String
+    Default: index.html
+
+  BucketName:
+    Description: Nombre de la bucket para hostear un sitio web estático.
+    Type: String
+    Default: fileBucket
 
 Resources:
   # Definición de VPC y subnets. También se integra la internet gateway.
@@ -117,7 +133,7 @@ Resources:
       DestinationCidrBlock: 0.0.0.0/0
       GatewayId: !Ref InternetGateway
 
-  # Ruta ipv4 para PrivateSubnet1
+  # Ruta ipv4 para PublicSubnet1
 
   PublicSubnet1RouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
@@ -125,7 +141,7 @@ Resources:
       RouteTableId: !Ref PublicRouteTable
       SubnetId: !Ref PublicSubnet1
 
-  # Ruta ipv4 para PrivateSubnet2
+  # Ruta ipv4 para PublicSubnet2
 
   PublicSubnet2RouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
@@ -133,55 +149,7 @@ Resources:
       RouteTableId: !Ref PublicRouteTable
       SubnetId: !Ref PublicSubnet2
 
-  # Tabla de ruteo privada AZ1.
-
-  PrivateRouteTable1:
-    Type: AWS::EC2::RouteTable
-    Properties:
-      VpcId: !Ref VPC
-      Tags:
-        - Key: Name
-          Value: !Sub ${EnvironmentName} Private Routes (AZ1)
-
-  # Ruta ipv4 para PrivateSubnet1
-
-  DefaultPrivateRoute1:
-    Type: AWS::EC2::Route
-    Properties:
-      RouteTableId: !Ref PrivateRouteTable1
-      DestinationCidrBlock: 0.0.0.0/0
-
-  PrivateSubnet1RouteTableAssociation:
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties:
-      RouteTableId: !Ref PrivateRouteTable1
-      SubnetId: !Ref PrivateSubnet1
-
-  # Tabla de ruteo privada AZ2.
-
-  PrivateRouteTable2:
-    Type: AWS::EC2::RouteTable
-    Properties:
-      VpcId: !Ref VPC
-      Tags:
-        - Key: Name
-          Value: !Sub ${EnvironmentName} Private Routes (AZ2)
-
-  # Ruta ipv4 para PrivateSubnet2
-
-  DefaultPrivateRoute2:
-    Type: AWS::EC2::Route
-    Properties:
-      RouteTableId: !Ref PrivateRouteTable2
-      DestinationCidrBlock: 0.0.0.0/0
-
-  PrivateSubnet2RouteTableAssociation:
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties:
-      RouteTableId: !Ref PrivateRouteTable2
-      SubnetId: !Ref PrivateSubnet2
-
-  #NACL para la VPC hanilitando HTTP/HTTPS inbound y outbound
+  #NACL para la VPC hanilitando HTTP/HTTPS inbound y outbound, inbound SSH
 
   Nacl:
     Type: AWS::EC2::NetworkAcl
@@ -221,7 +189,7 @@ Resources:
     Type: AWS::EC2::NetworkAclEntry
     Properties:
       NetworkAclId: !Ref Nacl
-      RuleNumber: 100
+      RuleNumber: 101
       Protocol: 6
       RuleAction: allow
       Egress: "true"
@@ -234,7 +202,7 @@ Resources:
     Type: AWS::EC2::NetworkAclEntry
     Properties:
       NetworkAclId: !Ref Nacl
-      RuleNumber: 200
+      RuleNumber: 201
       Protocol: 6
       RuleAction: allow
       Egress: "true"
@@ -242,6 +210,38 @@ Resources:
       PortRange:
         From: 443
         To: 443
+
+  InboundSSH:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      NetworkAclId: !Ref Nacl
+      RuleNumber: 102
+      Protocol: -1
+      RuleAction: allow
+      CidrBlock: 0.0.0.0/0
+      PortRange:
+        From: 22
+        To: 22
+
+  InboundElse:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      NetworkAclId: !Ref Nacl
+      RuleNumber: 105
+      Protocol: -1
+      RuleAction: deny
+      Egress: "false"
+      CidrBlock: 0.0.0.0/0
+  
+  OutboundElse:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      NetworkAclId: !Ref Nacl
+      RuleNumber: 202
+      Protocol: -1
+      RuleAction: allow
+      Egress: "true"
+      CidrBlock: 0.0.0.0/0
 
   # Asociar las subnets públicas con la NACL creada
 
@@ -256,6 +256,90 @@ Resources:
     Properties:
       SubnetId: !Ref PublicSubnet2
       NetworkAclId: !Ref Nacl
+
+  # VPC endpoints para permitir el tráfico desde nuestra VPC hacia el internet y viceversa
+
+  S3VPCEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Properties: 
+      VpcId: !Ref VPC
+      ServiceName: !Sub "com.amazonaws.${AWS::Region}.s3"
+      PolicyDocument:
+      Version: 2012-10-17
+      Statement:
+        Effect: Allow
+        Principal: '*'
+        Action: 's3:GetObject'
+        Resource: !Join ["", ["arn:aws:s3:::", !Ref BucketName, /*]]
+      RouteTableIds: PublicRouteTable
+  
+  # Security Groups para HTTP, HTTPS, RDS
+
+  RDSAccessSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Acceso a RDS
+      VpcId: !Ref VPC
+    Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} RDS Acces Security Group
+
+  #S3 Bucket para hostear un sitio estático con permisos públicos de lectura por default
+
+  HostingBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref HostingBucketName
+      AccessControl: PublicRead
+      WebsiteConfiguration:
+        IndexDocument: !Ref HostingIndexDocument
+        ErrorDocument: !Ref HostingIndexDocument
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} Hosting Bucket
+
+  #S3 Bucket para almacenar archivos
+
+  FileBucket:
+    Type: AWS::S3::Bucket
+    Properties: 
+      AccessControl: Private
+      BucketName: !Ref BucketName
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} File Bucket
+
+  # Bucket Policy para permitir a los usuarios acceder a nuestra Bucket de Hosting.
+
+  HostingBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref HostingBucketName
+      PolicyDocument:
+        Id: HostingPolicy
+        Version: 2012-10-17
+        Statement:
+          - Sid: PublicReadForGetBucketObjects
+            Effect: Allow
+            Principal: "*"
+            Action: "s3:GetObject"
+            Resource: !Join ["", ["arn:aws:s3:::", !Ref HostingBucketName, /*]]
+
+  # Bucket Policy para conceder permisos de lectura a nuestra Bucket de Archivos.
+
+  FileBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref BucketName
+      PolicyDocument:
+        Id: FileBucketPolicy
+        Version: 2012-10-17
+        Statement:
+          - Sid: PublicReadForGetBucketObjects
+            Effect: Allow
+            Principal: "*"
+            Action: "s3:GetObject"
+            Resource: !Join ["", ["arn:aws:s3:::", !Ref BucketName, /*]]
 
 Outputs:
   VPC:
