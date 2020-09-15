@@ -1,0 +1,114 @@
+Description: Template para la aplicación web Tiango.
+Parameters:
+  EnvironmentName:
+    Description: Un nombre del entorno para poner como prefijo a los recursos.
+    Type: String
+
+  VpcCIDR:
+    Description: Por favor ingresa el rango de la IP (CIDR notation) para la VPC.
+    Type: String
+    Default: 10.0.0.0/16
+
+  PublicSubnet1CIDR:
+    Description: Por favor ingresa el rango de la IP (CIDR notation) para la subnet pública en la primera zona de disponibilidad.
+    Type: String
+    Default: 10.0.0.0/24
+
+  PublicSubnet2CIDR:
+    Description: Por favor ingresa el rango de la IP (CIDR notation) para la subnet pública en la segunda zona de disponibilidad.
+    Type: String
+    Default: 10.0.1.0/24
+
+  PrivateSubnet1CIDR:
+    Description: Por favor ingresa el rango de la IP (CIDR notation) para la subnet privada en la primera zona de disponibilidad.
+    Type: String
+    Default: 10.0.2.0/24
+
+  PrivateSubnet2CIDR:
+    Description: Por favor ingresa el rango de la IP (CIDR notation) para la subnet privada en la segunda zona de disponibilidad.
+    Type: String
+    Default: 10.0.3.0/24
+
+Resources:
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref VpcCIDR
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: !Ref EnvironmentName
+
+  PublicSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [0, !GetAZs ""]
+      CidrBlock: !Ref PublicSubnet1CIDR
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} Public Subnet (AZ1)
+
+  PublicSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [1, !GetAZs ""]
+      CidrBlock: !Ref PublicSubnet2CIDR
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} Public Subnet (AZ2)
+
+  PrivateSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [0, !GetAZs ""]
+      CidrBlock: !Ref PrivateSubnet1CIDR
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} Private Subnet (AZ1)
+
+  PrivateSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [1, !GetAZs ""]
+      CidrBlock: !Ref PrivateSubnet2CIDR
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} Private Subnet (AZ2)
+
+Outputs:
+  VPC:
+    Description: Una referencia a la VPC creada.
+    Value: !Ref VPC
+
+  PublicSubnets:
+    Description: Las subnets públicas.
+    Value: !Join [",", [!Ref PublicSubnet1, !Ref PublicSubnet2]]
+
+  PrivateSubnets:
+    Description: Las subnets privadas.
+    Value: !Join [",", [!Ref PrivateSubnet1, !Ref PrivateSubnet2]]
+
+  PublicSubnet1:
+    Description: Una referencia a la subnet pública en la 1er zona de disponibilidad.
+    Value: !Ref PublicSubnet1
+
+  PublicSubnet2:
+    Description: Una referencia a la subnet pública en la 2da zona de disponibilidad.
+    Value: !Ref PublicSubnet2
+
+  PrivateSubnet1:
+    Description: Una referencia a la subnet privada en la 1er zona de disponibilidad.
+    Value: !Ref PrivateSubnet1
+
+  PrivateSubnet2:
+    Description: Una referencia a la subnet privada en la 2da zona de disponibilidad.
+    Value: !Ref PrivateSubnet2
