@@ -1,0 +1,74 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Template para la aplicación web Tiango.",
+  "Metadata": {},
+  "Parameters": {},
+  "Mappings": {
+    "SubnetConfig": {
+      "VPC": {
+        "CIDR": "10.0.0.0/16"
+      },
+      "Public0": {
+        "CIDR": "10.0.0.0/24"
+      },
+      "Public1": {
+        "CIDR": "10.0.1.0/24"
+      },
+      "Private0": {
+        "CIDR": "10.0.2.0/24"
+      },
+      "Private1": {
+        "CIDR": "10.0.3.0/24"
+      }
+    }
+  },
+  "Conditions": {},
+  "Resources": {
+    "VPC": {
+      "Type": "AWS::EC2::VPC",
+      "Properties": {
+        "CidrBlock": {
+          "Fn::FindInMap": ["SubnetConfig", "VPC", "CIDR"]
+        },
+        "Tags": []
+      }
+    },
+    "Public0": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "AvailabilityZone": "-",
+        "VpcId": "-",
+        "CidrBlock": { "Fn::FindInMap": ["SubnetConfig", "Public0", "CIDR"] },
+        "Tags": ["-"]
+      }
+    },
+    "Public1": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "AvailabilityZone": "-",
+        "VpcId": "-",
+        "CidrBlock": { "Fn::FindInMap": ["SubnetConfig", "Public1", "CIDR"] },
+        "Tags": ["-"]
+      }
+    },
+    "Private0": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "AvailabilityZone": "-",
+        "VpcId": "-",
+        "CidrBlock": { "Fn::FindInMap": ["SubnetConfig", "Private0", "CIDR"] },
+        "Tags": ["-"]
+      }
+    },
+    "Private1": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "AvailabilityZone": "-",
+        "VpcId": "-",
+        "CidrBlock": { "Fn::FindInMap": ["SubnetConfig", "Private1", "CIDR"] },
+        "Tags": ["-"]
+      }
+    }
+  },
+  "Outputs": {}
+}
