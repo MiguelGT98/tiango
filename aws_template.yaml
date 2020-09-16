@@ -4,6 +4,7 @@ Parameters:
   EnvironmentName:
     Description: Un nombre del entorno para poner como prefijo a los recursos.
     Type: String
+    Default: tiango
 
   VpcCIDR:
     Description: Por favor ingresa el rango de la IP (CIDR notation) para la VPC.
@@ -33,7 +34,7 @@ Parameters:
   HostingBucketName:
     Description: Nombre de la bucket para hostear un sitio web estático.
     Type: String
-    Default: hostingBucket
+    Default: tiango-hosting-bucket
 
   HostingIndexDocument:
     Description: Ruta de inicio para un sitio web estático.
@@ -43,7 +44,7 @@ Parameters:
   BucketName:
     Description: Nombre de la bucket para hostear un sitio web estático.
     Type: String
-    Default: fileBucket
+    Default: tiango-file-bucket
 
 Resources:
   # Definición de VPC y subnets. También se integra la internet gateway.
@@ -264,23 +265,65 @@ Resources:
     Properties: 
       VpcId: !Ref VPC
       ServiceName: !Sub "com.amazonaws.${AWS::Region}.s3"
+      RouteTableIds:
+        - !Ref PublicRouteTable
       PolicyDocument:
-      Version: 2012-10-17
-      Statement:
-        Effect: Allow
-        Principal: '*'
-        Action: 's3:GetObject'
-        Resource: !Join ["", ["arn:aws:s3:::", !Ref BucketName, /*]]
-      RouteTableIds: PublicRouteTable
-  
-  # Security Groups para HTTP, HTTPS, RDS
+        Id: HostingPolicy
+        Version: 2012-10-17
+        Statement:
+          - Sid: PublicReadForGetBucketObjects
+            Effect: Allow
+            Principal: "*"
+            Action: "s3:GetObject"
+            Resource: !Join ["", ["arn:aws:s3:::", !Ref HostingBucketName, /*]]
 
-  RDSAccessSecurityGroup:
+  # Security Groups para HTTP, HTTPS, SSH y RDS
+
+  default:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Grupo de seguridad default 
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} Default SG
+      VpcId: !Ref VPC
+
+  SecurityGroupIngressHTTPS:
+    Type: AWS::EC2::SecurityGroupIngress
+    DependsOn: "default"
+    Properties: 
+      CidrIp: 0.0.0.0/0
+      FromPort: 443
+      GroupId: !Ref default
+      IpProtocol: tcp
+      ToPort: 443
+
+  SecurityGroupIngressHTTP:
+    Type: AWS::EC2::SecurityGroupIngress
+    DependsOn: "default"
+    Properties: 
+      CidrIp: 0.0.0.0/0
+      FromPort: 80
+      GroupId: !Ref default
+      IpProtocol: tcp
+      ToPort: 80
+
+  SecurityGroupIngressSSH:
+    Type: AWS::EC2::SecurityGroupIngress
+    DependsOn: "default"
+    Properties: 
+      CidrIp: 0.0.0.0/0
+      FromPort: 22
+      GroupId: !Ref default
+      IpProtocol: tcp
+      ToPort: 22
+  
+  rds:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Acceso a RDS
       VpcId: !Ref VPC
-    Tags:
+      Tags:
         - Key: Name
           Value: !Sub ${EnvironmentName} RDS Acces Security Group
 
@@ -294,6 +337,13 @@ Resources:
       WebsiteConfiguration:
         IndexDocument: !Ref HostingIndexDocument
         ErrorDocument: !Ref HostingIndexDocument
+        RoutingRules:
+        - RoutingRuleCondition:
+            HttpErrorCodeReturnedEquals: '404'
+            KeyPrefixEquals: /
+          RedirectRule: 
+            HostName: !Sub ${HostingBucketName}.us-east-1.amazonaws.com
+            ReplaceKeyPrefixWith: report-404/
       Tags:
         - Key: Name
           Value: !Sub ${EnvironmentName} Hosting Bucket
@@ -314,9 +364,8 @@ Resources:
   HostingBucketPolicy:
     Type: AWS::S3::BucketPolicy
     Properties:
-      Bucket: !Ref HostingBucketName
+      Bucket: !Ref HostingBucket
       PolicyDocument:
-        Id: HostingPolicy
         Version: 2012-10-17
         Statement:
           - Sid: PublicReadForGetBucketObjects
@@ -330,9 +379,8 @@ Resources:
   FileBucketPolicy:
     Type: AWS::S3::BucketPolicy
     Properties:
-      Bucket: !Ref BucketName
+      Bucket: !Ref FileBucket
       PolicyDocument:
-        Id: FileBucketPolicy
         Version: 2012-10-17
         Statement:
           - Sid: PublicReadForGetBucketObjects
