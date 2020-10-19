@@ -7,6 +7,7 @@ const app = express();
 
 // Routes
 const userRoutes = require("./routes/UserRoutes");
+const productRoutes = require("./routes/ProductRoutes");
 
 app.use(cors());
 
@@ -15,6 +16,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
 app.use("/users", userRoutes);
+app.use("/products", productRoutes);
 
 // App init
 app.listen(8080, () => {
