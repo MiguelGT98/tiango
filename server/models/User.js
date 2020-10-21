@@ -10,6 +10,19 @@ const dynamodbDocClient = new AWS.DynamoDB.DocumentClient();
 
 const { v4: uuidv4 } = require("uuid");
 
+// For Cognito auth
+const AmazonCognitoIdentity = require("amazon-cognito-identity-js");
+const CognitoUserPool = AmazonCognitoIdentity.CognitoUserPool;
+const AWSCognito = require("aws-sdk");
+AWSCognito.config.region = "us-east-1";
+const request = require("request");
+const jwkToPem = require("jwk-to-pem");
+const jwt = require("jsonwebtoken");
+global.fetch = require("node-fetch");
+
+const util = require("util");
+const Cognito = require("./Cognito");
+
 exports.createTable = () => {
   const params = {
     TableName: "users",
@@ -52,11 +65,101 @@ exports.findByID = (id) => {
     });
 };
 
+const signUpWithCognito = (username, password, agent = "none") => {
+  return new Promise((resolve, reject) => {
+    Cognito.initAWS();
+    Cognito.setCognitoAttributeList(username, agent);
+    Cognito.getUserPool().signUp(
+      username,
+      password,
+      Cognito.getCognitoAttributeList(),
+      null,
+      function (err, result) {
+        if (err) {
+          return reject(err);
+        }
+
+        const response = {
+          username: result.user.username,
+          userConfirmed: result.userConfirmed,
+          userAgent: result.user.client.userAgent,
+        };
+        return resolve(response);
+      }
+    );
+  });
+};
+
+exports.register = (user) => {
+  return signUpWithCognito(user.username, user.password)
+    .then((result) => {
+      return result;
+    })
+    .catch((error) => {
+      throw error;
+    });
+};
+
+const verifyCode = (user, code) => {
+  return new Promise((resolve, reject) => {
+    Cognito.getCognitoUser(user).confirmRegistration(
+      code,
+      true,
+      (err, result) => {
+        if (err) {
+          return reject(err);
+        }
+        return resolve(result);
+      }
+    );
+  });
+};
+
+exports.confirmCode = (user, code) => {
+  return verifyCode(user.username, code)
+    .then((result) => {
+      return result;
+    })
+    .catch((error) => {
+      throw error;
+    });
+};
+
+const signInWithCognito = (username, password) => {
+  return new Promise((resolve, reject) => {
+    Cognito.getCognitoUser(username).authenticateUser(
+      Cognito.getAuthDetails(username, password),
+      {
+        onSuccess: (result) => {
+          const token = {
+            accessToken: result.getAccessToken().getJwtToken(),
+            idToken: result.getIdToken().getJwtToken(),
+            refreshToken: result.getRefreshToken().getToken(),
+          };
+          return resolve(Cognito.decodeJWTToken(token));
+        },
+        onFailure: (err) => {
+          return reject(err);
+        },
+      }
+    );
+  });
+};
+
+exports.login = (user) => {
+  return signInWithCognito(user.username, user.password)
+    .then((result) => {
+      return result;
+    })
+    .catch((error) => {
+      throw error;
+    });
+};
+
 exports.createUser = (user) => {
-  const id = uuidv4();
   const params = {
     TableName: "users",
-    Item: { ...user, id },
+    Item: { ...user },
   };
 
   return dynamodbDocClient

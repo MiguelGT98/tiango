@@ -16,6 +16,9 @@ services:
     environment:
       AWS_ACCESS_KEY_ID: "dummy"
       AWS_SECRET_ACCESS_KEY: "dummy"
+      AWS_COGNITO_USER_POOL_ID: "dummy"
+      AWS_COGNITO_CLIENT_ID: "dummy"
+      AWS_COGNITO_REGION: "dummy"
     ports:
       - "8080:8080"
     expose:
