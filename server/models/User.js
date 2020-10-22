@@ -56,9 +56,9 @@ exports.findByID = (id) => {
     .get(params)
     .promise()
     .then((result) => {
-      if (isEmptyObject(result))
+      if (isEmptyObject(result.Item))
         throw { message: `User with ID: ${id} not found.` };
-      return result;
+      return result.Item;
     })
     .catch((error) => {
       throw error;
@@ -80,10 +80,12 @@ const signUpWithCognito = (username, password, agent = "none") => {
         }
 
         const response = {
+          uid: result.userSub,
           username: result.user.username,
           userConfirmed: result.userConfirmed,
           userAgent: result.user.client.userAgent,
         };
+
         return resolve(response);
       }
     );
@@ -117,6 +119,9 @@ const verifyCode = (user, code) => {
 
 exports.confirmCode = (user, code) => {
   return verifyCode(user.username, code)
+    .then(() => {
+      return this.update(user.id, { verified: true });
+    })
     .then((result) => {
       return result;
     })
@@ -181,6 +186,42 @@ exports.findAll = () => {
     .promise()
     .then(({ Items }) => {
       return Items;
+    })
+    .catch((error) => {
+      throw error;
+    });
+};
+
+exports.update = (id, user) => {
+  let updateExpression = "set";
+  let ExpressionAttributeNames = {};
+  let ExpressionAttributeValues = {};
+
+  Object.keys(user).forEach((property, index, arr) => {
+    updateExpression += ` #${property} = :${property}`;
+
+    if (index < arr.length - 1) updateExpression += ",";
+
+    ExpressionAttributeNames["#" + property] = property;
+    ExpressionAttributeValues[":" + property] = user[property];
+  });
+
+  const params = {
+    TableName: "users",
+    Key: {
+      id,
+    },
+    UpdateExpression: updateExpression,
+    ExpressionAttributeValues,
+    ExpressionAttributeNames,
+    ReturnValues: "UPDATED_NEW",
+  };
+
+  return dynamodbDocClient
+    .update(params)
+    .promise()
+    .then((result) => {
+      return result;
     })
     .catch((error) => {
       throw error;
