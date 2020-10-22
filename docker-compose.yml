@@ -19,6 +19,7 @@ services:
       AWS_COGNITO_USER_POOL_ID: "dummy"
       AWS_COGNITO_CLIENT_ID: "dummy"
       AWS_COGNITO_REGION: "dummy"
+      TEST_STRIPE_PRIVATE_KEY: "dummy"
     ports:
       - "8080:8080"
     expose:

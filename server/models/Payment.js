@@ -1,3 +1,7 @@
+const stripe = require("stripe")(
+  process.env.TEST_STRIPE_PRIVATE_KEY
+);
+
 var AWS = require("aws-sdk");
 
 AWS.config.update({
@@ -10,9 +14,74 @@ const dynamodbDocClient = new AWS.DynamoDB.DocumentClient();
 
 const { v4: uuidv4 } = require("uuid");
 
+const User = require("../models/User");
+
+exports.payWithCard = (payment_data, user_id) => {
+  const { amount, source, description } = payment_data;
+
+  return User.findByID(user_id)
+    .then((user) => {
+      return stripe.charges.create({
+        amount: amount * 100,
+        currency: "mxn",
+        source,
+        description,
+        customer: user.stripe_id,
+      });
+    })
+    .then((response) => {
+      const {
+        id,
+        amount,
+        captured,
+        description,
+        paid,
+        payment_method,
+        payment_method_details,
+        status,
+        source,
+      } = response;
+      return {
+        id,
+        amount,
+        captured,
+        description,
+        paid,
+        payment_method,
+        payment_method_details,
+        status,
+        source,
+      };
+    })
+    .then((payment) => {
+      return this.createPayment(payment, user_id);
+    })
+    .catch((error) => {
+      throw error;
+    });
+};
+
+exports.createPayment = (payment, user_id) => {
+  const id = uuidv4();
+  const params = {
+    TableName: "payments",
+    Item: { ...payment, id, stripe_id: payment.id, user_id },
+  };
+
+  return dynamodbDocClient
+    .put(params)
+    .promise()
+    .then(() => {
+      return { message: "Payment created successfully.", payment };
+    })
+    .catch((error) => {
+      throw error;
+    });
+};
+
 exports.createTable = () => {
   const params = {
-    TableName: "products",
+    TableName: "payments",
     KeySchema: [{ AttributeName: "id", KeyType: "HASH" }],
     AttributeDefinitions: [{ AttributeName: "id", AttributeType: "S" }],
     ProvisionedThroughput: {
@@ -34,7 +103,7 @@ exports.createTable = () => {
 
 exports.findByID = (id) => {
   const params = {
-    TableName: "products",
+    TableName: "payments",
     Key: {
       id,
     },
@@ -44,7 +113,7 @@ exports.findByID = (id) => {
     .promise()
     .then((result) => {
       if (isEmptyObject(result.Item))
-        throw { message: `Product with ID: ${id} not found.` };
+        throw { message: `Payment with ID: ${id} not found.` };
       return result.Item;
     })
     .catch((error) => {
@@ -52,26 +121,8 @@ exports.findByID = (id) => {
     });
 };
 
-exports.createProduct = (product) => {
-  const id = uuidv4();
-  const params = {
-    TableName: "products",
-    Item: { ...product, id },
-  };
-
-  return dynamodbDocClient
-    .put(params)
-    .promise()
-    .then(() => {
-      return { message: "Product created successfully.", product };
-    })
-    .catch((error) => {
-      throw error;
-    });
-};
-
 exports.findAll = () => {
-  const params = { TableName: "products", Select: "ALL_ATTRIBUTES" };
+  const params = { TableName: "payments", Select: "ALL_ATTRIBUTES" };
 
   return dynamodb
     .scan(params)
@@ -84,22 +135,22 @@ exports.findAll = () => {
     });
 };
 
-exports.update = (id, product) => {
+exports.update = (id, payment) => {
   let updateExpression = "set";
   let ExpressionAttributeNames = {};
   let ExpressionAttributeValues = {};
 
-  Object.keys(product).forEach((property, index, arr) => {
+  Object.keys(payment).forEach((property, index, arr) => {
     updateExpression += ` #${property} = :${property}`;
 
     if (index < arr.length - 1) updateExpression += ",";
 
     ExpressionAttributeNames["#" + property] = property;
-    ExpressionAttributeValues[":" + property] = product[property];
+    ExpressionAttributeValues[":" + property] = payment[property];
   });
 
   const params = {
-    TableName: "products",
+    TableName: "payments",
     Key: {
       id,
     },
@@ -122,7 +173,7 @@ exports.update = (id, product) => {
 
 exports.delete = (id) => {
   const params = {
-    TableName: "products",
+    TableName: "payments",
     Key: {
       id,
     },
