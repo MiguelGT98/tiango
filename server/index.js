@@ -10,6 +10,7 @@ const userRoutes = require("./routes/UserRoutes");
 const productRoutes = require("./routes/ProductRoutes");
 const methodRoutes = require("./routes/PaymentMethodRoutes");
 const paymentRoutes = require("./routes/PaymentRoutes");
+const locationRoutes = require("./routes/LocationRoutes");
 
 app.use(cors());
 
@@ -21,6 +22,7 @@ app.use("/users", userRoutes);
 app.use("/products", productRoutes);
 app.use("/methods", methodRoutes);
 app.use("/payments", paymentRoutes);
+app.use("/locations", locationRoutes);
 
 // App init
 app.listen(8080, () => {
