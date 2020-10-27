@@ -1,21 +1,29 @@
-const stripe = require("stripe")(
-  process.env.TEST_STRIPE_PRIVATE_KEY
-);
+const stripe = require("stripe")(process.env.TEST_STRIPE_PRIVATE_KEY);
 
 var AWS = require("aws-sdk");
 
 AWS.config.update({
-  region: "us-west-2",
-  endpoint: "http://dynamodb:8000",
+  region: process.env.AWS_DEFAULT_REGION,
 });
 
 const User = require("./User");
 
-exports.findAll = (stripe_id) => {
-  return stripe.paymentMethods
-    .list({
-      customer: stripe_id,
-      type: "card",
+exports.findAll = (user_id) => {
+  return User.findByID(user_id)
+    .then((user) => {
+      if (user.stripe_id) {
+        return stripe.paymentMethods.list({
+          customer: user.stripe_id,
+          type: "card",
+        });
+      }
+
+      return createStripeUser(user).then((newUser) => {
+        return stripe.paymentMethods.list({
+          customer: newUser.Attributes.stripe_id,
+          type: "card",
+        });
+      });
     })
     .then((response) => {
       return response.data;
