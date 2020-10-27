@@ -1,25 +1,21 @@
 version: "3.7"
 
 services:
-  dynamodb:
-    container_name: dynamodb
-    image: amazon/dynamodb-local:latest
-    ports:
-      - "8000:8000"
-    expose:
-      - "8000"
-
   server:
-    depends_on:
-      - dynamodb
     container_name: server
     environment:
       AWS_ACCESS_KEY_ID: "dummy"
       AWS_SECRET_ACCESS_KEY: "dummy"
+      AWS_DEFAULT_REGION: "dummy"
       AWS_COGNITO_USER_POOL_ID: "dummy"
       AWS_COGNITO_CLIENT_ID: "dummy"
       AWS_COGNITO_REGION: "dummy"
       TEST_STRIPE_PRIVATE_KEY: "dummy"
+      RDS_HOSTNAME: "dummy"
+      RDS_USERNAME: "dummy"
+      RDS_PASSWORD: "dummy"
+      RDS_PORT: 4000
+      BUCKET_NAME: "dummy"
     ports:
       - "8080:8080"
     expose:

@@ -1,12 +1,10 @@
-const stripe = require("stripe")(
-  process.env.TEST_STRIPE_PRIVATE_KEY
-);
+const stripe = require("stripe")(process.env.TEST_STRIPE_PRIVATE_KEY);
 
 var AWS = require("aws-sdk");
 
 AWS.config.update({
-  region: "us-west-2",
-  endpoint: "http://dynamodb:8000",
+  region: process.env.AWS_DEFAULT_REGION
+  
 });
 
 const dynamodb = new AWS.DynamoDB();
@@ -17,14 +15,15 @@ const { v4: uuidv4 } = require("uuid");
 const User = require("../models/User");
 
 exports.payWithCard = (payment_data, user_id) => {
-  const { amount, source, description } = payment_data;
+  const { amount, payment_method, description } = payment_data;
 
   return User.findByID(user_id)
     .then((user) => {
-      return stripe.charges.create({
+      return stripe.paymentIntents.create({
         amount: amount * 100,
         currency: "mxn",
-        source,
+        confirm: true,
+        payment_method,
         description,
         customer: user.stripe_id,
       });
@@ -33,24 +32,18 @@ exports.payWithCard = (payment_data, user_id) => {
       const {
         id,
         amount,
-        captured,
+        invoice,
         description,
-        paid,
         payment_method,
-        payment_method_details,
         status,
-        source,
       } = response;
       return {
         id,
         amount,
-        captured,
+        invoice,
         description,
-        paid,
         payment_method,
-        payment_method_details,
         status,
-        source,
       };
     })
     .then((payment) => {

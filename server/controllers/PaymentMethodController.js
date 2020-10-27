@@ -4,10 +4,7 @@ const User = require("../models/User");
 exports.getAll = (req, res, next) => {
   const { user_id } = req.query;
 
-  return User.findByID(user_id)
-    .then((user) => {
-      return PaymentMethod.findAll(user.stripe_id);
-    })
+  return PaymentMethod.findAll(user_id)
     .then((methods) => {
       return res.status(200).json({ methods });
     })

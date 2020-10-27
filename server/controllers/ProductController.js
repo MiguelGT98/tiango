@@ -21,7 +21,7 @@ exports.getAll = (req, res, next) => {
 };
 
 exports.create = (req, res, next) => {
-  const product = req.body;
+  const product = { ...req.body, image_path: req.files[0].location };
 
   return Product.createProduct(product)
     .then((result) => {

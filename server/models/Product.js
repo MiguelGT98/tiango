@@ -1,8 +1,7 @@
 var AWS = require("aws-sdk");
 
 AWS.config.update({
-  region: "us-west-2",
-  endpoint: "http://dynamodb:8000",
+  region: process.env.AWS_DEFAULT_REGION,
 });
 
 const dynamodb = new AWS.DynamoDB();
@@ -73,7 +72,7 @@ exports.createProduct = (product) => {
 exports.findAll = () => {
   const params = { TableName: "products", Select: "ALL_ATTRIBUTES" };
 
-  return dynamodb
+  return dynamodbDocClient
     .scan(params)
     .promise()
     .then(({ Items }) => {
