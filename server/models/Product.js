@@ -83,6 +83,27 @@ exports.findAll = () => {
     });
 };
 
+exports.findAllFromLocation = (location_id) => {
+  const params = {
+    TableName: "products",
+    Select: "ALL_ATTRIBUTES",
+    FilterExpression: "location_id = :lid",
+    ExpressionAttributeValues: {
+      ":lid": location_id,
+    },
+  };
+
+  return dynamodbDocClient
+    .scan(params)
+    .promise()
+    .then(({ Items }) => {
+      return Items;
+    })
+    .catch((error) => {
+      throw error;
+    });
+};
+
 exports.update = (id, product) => {
   let updateExpression = "set";
   let ExpressionAttributeNames = {};

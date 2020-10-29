@@ -20,6 +20,16 @@ exports.getAll = (req, res, next) => {
     });
 };
 
+exports.getAllFromLocation = (req, res, next) => {
+  return Product.findAllFromLocation(req.params.location_id)
+    .then((products) => {
+      return res.status(200).json({ products });
+    })
+    .catch((error) => {
+      return res.status(404).json({ error });
+    });
+};
+
 exports.create = (req, res, next) => {
   const product = { ...req.body, image_path: req.files[0].location };
 

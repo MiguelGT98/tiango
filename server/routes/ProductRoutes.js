@@ -5,6 +5,7 @@ const { upload } = require("../models/Multer");
 
 router.post("/create", productController.createTable);
 router.get("/all", productController.getAll);
+router.get("/:location_id/all", productController.getAllFromLocation);
 router.get("/:id", productController.get);
 router.post("/", upload.array("image", 1), productController.create);
 router.patch("/:id", productController.update);
