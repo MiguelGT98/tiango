@@ -51,6 +51,18 @@ function getAuthDetails(username, password) {
   return new AmazonCognitoIdentity.AuthenticationDetails(authenticationData);
 }
 
+function resendVerificationCode(username) {
+  return new Promise((resolve, reject) => {
+    this.getCognitoUser(username).resendConfirmationCode((error, result) => {
+      if (error) {
+        reject(error);
+      } else {
+        resolve(result);
+      }
+    });
+  });
+}
+
 function initAWS(region = process.env.AWS_COGNITO_REGION) {
   AWS.config.region = region; // Region
 }
@@ -70,4 +82,5 @@ module.exports = {
   setCognitoAttributeList,
   getAuthDetails,
   decodeJWTToken,
+  resendVerificationCode,
 };

@@ -1,3 +1,4 @@
+const Cognito = require("../models/Cognito");
 const User = require("../models/User");
 
 exports.get = (req, res, next) => {
@@ -74,6 +75,19 @@ exports.createTable = (req, res, next) => {
   return User.createTable()
     .then((result) => {
       return res.status(200).json({ result });
+    })
+    .catch((error) => {
+      return res.status(error.statusCode || 401).json({ error });
+    });
+};
+
+exports.resendCode = (req, res, next) => {
+  return User.findByID(req.body.user.id)
+    .then((user) => {
+      return Cognito.resendVerificationCode(user.username);
+    })
+    .then((result) => {
+      return res.status(200).json(result);
     })
     .catch((error) => {
       return res.status(error.statusCode || 401).json({ error });

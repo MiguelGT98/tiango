@@ -33,6 +33,23 @@ exports.findAll = (user_id) => {
     });
 };
 
+exports.createPaymentMethod = (card_details, billing_details) => {
+  return stripe.paymentMethods
+    .create({
+      type: "card",
+      card: {
+        ...card_details,
+      },
+      billing_details,
+    })
+    .then((response) => {
+      return response;
+    })
+    .catch((error) => {
+      throw error;
+    });
+};
+
 exports.addPaymentMethod = (payment_method_id, user_id) => {
   return User.findByID(user_id)
     .then((user) => {

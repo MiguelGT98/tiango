@@ -7,5 +7,6 @@ router.get("/:id", userController.get);
 router.post("/register", userController.register);
 router.post("/login", userController.login);
 router.post("/verify", userController.verify);
+router.post("/code", userController.resendCode);
 
 module.exports = router;
