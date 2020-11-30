@@ -12,6 +12,7 @@ const methodRoutes = require("./routes/PaymentMethodRoutes");
 const paymentRoutes = require("./routes/PaymentRoutes");
 const locationRoutes = require("./routes/LocationRoutes");
 const orderRoutes = require("./routes/OrderRoutes");
+const merchantRoutes = require("./routes/MerchantRoutes");
 
 app.use(cors());
 
@@ -25,6 +26,7 @@ app.use("/methods", methodRoutes);
 app.use("/payments", paymentRoutes);
 app.use("/locations", locationRoutes);
 app.use("/orders", orderRoutes);
+app.use("/merchants", merchantRoutes);
 
 // App init
 app.listen(8080, () => {
