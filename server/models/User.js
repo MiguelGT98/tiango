@@ -1,8 +1,7 @@
 var AWS = require("aws-sdk");
 
 AWS.config.update({
-  region: process.env.AWS_DEFAULT_REGION
-  
+  region: process.env.AWS_DEFAULT_REGION,
 });
 
 const dynamodb = new AWS.DynamoDB();
@@ -164,7 +163,7 @@ exports.login = (user) => {
 exports.createUser = (user) => {
   const params = {
     TableName: "users",
-    Item: { ...user },
+    Item: { ...user, points: 0 },
   };
 
   return dynamodbDocClient

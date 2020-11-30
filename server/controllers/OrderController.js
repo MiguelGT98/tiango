@@ -1,4 +1,5 @@
 const Payment = require("../models/Payment");
+const User = require("../models/User");
 const Order = require("../models/Order");
 
 exports.create = (req, res, next) => {
@@ -23,6 +24,47 @@ exports.create = (req, res, next) => {
         description: payment.description,
         date_created: new Date().toISOString(),
         status: "pending",
+        user_id,
+      };
+
+      return Order.createOrder(order);
+    })
+    .then((result) => {
+      return res.status(200).json(result);
+    })
+    .catch((error) => {
+      return res.status(404).json({ error });
+    });
+};
+
+exports.createWithPoints = (req, res, next) => {
+  const { user_id, products } = req.body;
+
+  const payment_data = {
+    amount: products.reduce((acc, product) => {
+      return acc + typeof product.price === "number"
+        ? product.price
+        : parseFloat(product.price) * product.quantity;
+    }, 0),
+    description: "Test order",
+  };
+
+  return User.findByID(user_id)
+    .then((user) => {
+      if (user.points < payment_data.amount) {
+        throw { message: "User does not have enough points." };
+      }
+
+      return User.update(user_id, {
+        points: user.points - payment_data.amount,
+      });
+    })
+    .then(() => {
+      const order = {
+        products,
+        amount: payment_data.amount * 100,
+        date_created: new Date().toISOString(),
+        status: "accepted",
         user_id,
       };
 

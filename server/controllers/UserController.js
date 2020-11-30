@@ -93,3 +93,21 @@ exports.resendCode = (req, res, next) => {
       return res.status(error.statusCode || 401).json({ error });
     });
 };
+
+exports.addPoints = (req, res, next) => {
+  return User.findByID(req.body.user_id)
+    .then((user) => {
+      console.log(user);
+      return User.update(req.body.user_id, {
+        points: !isNaN(user.points)
+          ? user.points + req.body.points
+          : 0 + req.body.points,
+      });
+    })
+    .then((result) => {
+      return res.status(200).json(result);
+    })
+    .catch((error) => {
+      return res.status(error.statusCode || 401).json({ error });
+    });
+};
