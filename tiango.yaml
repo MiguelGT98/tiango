@@ -256,25 +256,3 @@ Resources:
       CognitoIdentityProviders: 
         - ClientId: !Ref UserPoolClient
           ProviderName: !GetAtt UserPool.ProviderName
-  
-  # Lambda for DynamoDB
-  DynamoDBLambda:
-    Type: AWS::Lambda::Function
-    Properties: 
-      Code: 
-        S3Bucket: "tiango-lambdas-bucket-c"
-        S3Key: dynamodb-lambda.zip
-      Handler: 'handler'
-      Role: "arn:aws:iam::892366258012:role/Lambda-role"
-      Runtime: nodejs12.x
-
-  # Lambda for RDS
-  RDSLambda:
-    Type: AWS::Lambda::Function
-    Properties: 
-      Code: 
-        S3Bucket: "tiango-lambdas-bucket-c"
-        S3Key: rds-lambda.zip
-      Handler: 'handler'
-      Role: "arn:aws:iam::892366258012:role/Lambda-role"
-      Runtime: nodejs12.x
