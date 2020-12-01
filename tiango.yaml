@@ -243,7 +243,7 @@ Resources:
   UserPoolClient:
     Type: "AWS::Cognito::UserPoolClient"
     Properties:
-      ClientName: !Sub ${AWS::StackName}-client
+      ClientName: !Sub ${AWS::StackName}-user-pool-client
       GenerateSecret: false
       UserPoolId: !Ref UserPool
   
@@ -251,7 +251,7 @@ Resources:
   IdentityPool:
     Type: "AWS::Cognito::IdentityPool"
     Properties:
-      IdentityPoolName: !Sub ${AWS::StackName}-identity
+      IdentityPoolName: !Sub ${AWS::StackName}-user-pool-identity
       AllowUnauthenticatedIdentities: true
       CognitoIdentityProviders: 
         - ClientId: !Ref UserPoolClient
