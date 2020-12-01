@@ -192,28 +192,6 @@ Resources:
       - !GetAtt DBEC2SecurityGroup.GroupId
     DeletionPolicy: Snapshot
 
-  # Execution role for Lambdas
-  LambdaExecutionRole:
-    Type: AWS::IAM::Role
-    Properties:
-      RoleName:
-        Fn::Sub: Lambda-role
-      AssumeRolePolicyDocument:
-        Statement:
-          - Action:
-            - sts:AssumeRole
-            Effect: Allow
-            Principal:
-              Service:
-              - lambda.amazonaws.com
-        Version: 2012-10-17
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/AWSLambdaExecute
-        - arn:aws:iam::aws:policy/AmazonS3FullAccess
-        - arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess
-        - arn:aws:iam::aws:policy/AmazonRDSFullAccess
-      Path: /
-
   # Lambda for DynamoDB
   DynamoDBLambda:
     Type: AWS::Lambda::Function
