@@ -190,6 +190,3 @@ Resources:
       MasterUserPassword: superroot
       VPCSecurityGroups:
       - !GetAtt DBEC2SecurityGroup.GroupId
-    DeletionPolicy: Snapshot
-
- 
