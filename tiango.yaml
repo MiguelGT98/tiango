@@ -186,8 +186,8 @@ Resources:
       Engine: MySQL
       MasterUsername: root
       MasterUserPassword: superroot
-      VPCSecurityGroups:
-      - !GetAtt DBEC2SecurityGroup.GroupId
+      DBSecurityGroups:
+        - !Ref DBSecurityGroup
 
   # Creates a role that allows Cognito to send SNS messages
   SNSRole:
