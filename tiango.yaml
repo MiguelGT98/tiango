@@ -216,7 +216,6 @@ Resources:
     Type: "AWS::Cognito::UserPool"
     Properties:
       UserPoolName: !Sub ${AWS::StackName}-user-pool
-      MfaConfiguration: "ON"
       AutoVerifiedAttributes:
         - phone_number
       SmsConfiguration:
