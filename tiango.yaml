@@ -169,15 +169,13 @@ Resources:
         - Key: Name
           Value: !Sub ${AWS::StackName}-Bucket-Lambdas
 
-  # Security Group for EC2 Instance
-  DBEC2SecurityGroup:
-    Type: AWS::EC2::SecurityGroup
+  # Security group for allowing connections to RDS
+  DBSecurityGroup:
+    Type: AWS::RDS::DBSecurityGroup
     Properties:
-      GroupDescription: Open database for access
-      SecurityGroupIngress:
-      - IpProtocol: tcp
-        FromPort: '3306'
-        ToPort: '3306'
+      GroupDescription: All-Security-Group
+      DBSecurityGroupIngress:
+        - CIDRIP: 0.0.0.0/0
 
   # RDS Database
   MySQLDB:
@@ -257,3 +255,25 @@ Resources:
       CognitoIdentityProviders: 
         - ClientId: !Ref UserPoolClient
           ProviderName: !GetAtt UserPool.ProviderName
+  
+  # Lambda for DynamoDB
+  DynamoDBLambda:
+    Type: AWS::Lambda::Function
+    Properties: 
+      Code: 
+        S3Bucket: "tiango-lambdas-bucket-c"
+        S3Key: dynamodb-lambda.zip
+      Handler: 'handler'
+      Role: "arn:aws:iam::892366258012:role/Lambda-role"
+      Runtime: nodejs12.x
+
+  # Lambda for RDS
+  RDSLambda:
+    Type: AWS::Lambda::Function
+    Properties: 
+      Code: 
+        S3Bucket: "tiango-lambdas-bucket-c"
+        S3Key: rds-lambda.zip
+      Handler: 'handler'
+      Role: "arn:aws:iam::892366258012:role/Lambda-role"
+      Runtime: nodejs12.x
