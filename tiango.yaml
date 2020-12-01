@@ -200,7 +200,7 @@ Resources:
         S3Bucket: "tiango-lambdas-bucket-c"
         S3Key: dynamodb-lambda.zip
       Handler: 'handler'
-      Role: "Lambda-role"
+      Role: "arn:aws:iam::892366258012:role/Lambda-role"
       Runtime: nodejs12.x
 
   # Lambda for RDS
@@ -211,5 +211,5 @@ Resources:
         S3Bucket: "tiango-lambdas-bucket-c"
         S3Key: rds-lambda.zip
       Handler: 'handler'
-      Role: "Lambda-role"
+      Role: "arn:aws:iam::892366258012:role/Lambda-role"
       Runtime: nodejs12.x
