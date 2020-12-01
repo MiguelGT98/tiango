@@ -242,7 +242,6 @@ Resources:
       UserPoolName: !Sub ${AWS::StackName}-user-pool
       AutoVerifiedAttributes:
         - phone_number
-      MfaConfiguration: "ON"
       SmsConfiguration:
         ExternalId: !Sub ${AWS::StackName}-external
         SnsCallerArn: !GetAtt SNSRole.Arn
@@ -250,10 +249,6 @@ Resources:
         - Name: name
           AttributeDataType: String
           Mutable: true
-          Required: true
-        - Name: email
-          AttributeDataType: String
-          Mutable: false
           Required: true
         - Name: phone_number
           AttributeDataType: String
